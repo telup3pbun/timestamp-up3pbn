@@ -2,289 +2,349 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Camera Timestamp Pro HD - PBN</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Camera Timestamp Pro - Zoom Slider HD</title>
 
 <style>
-body{
-    margin:0;
-    background:black;
-    font-family:Arial, sans-serif;
-    overflow:hidden;
+:root {
+    --primary-color: #00ff00;
 }
 
-video{
-    width:100vw;
-    height:100vh;
-    object-fit:cover;
-    transform-origin:center;
+body {
+    margin: 0;
+    background: #000;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    overflow: hidden;
+    touch-action: none;
 }
 
-#timestamp{
-    position:absolute;
-    bottom:20px;
-    left:20px;
-    background:rgba(0,0,0,0.6);
-    color:#00ff00;
-    padding:15px;
-    border-radius:10px;
-    font-size:14px;
-    max-width:90%;
-    line-height: 1.5;
-    z-index: 5;
+.camera-wrapper {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
-.controls{
-    position:absolute;
-    top:20px;
-    left:20px;
-    display:flex;
-    gap:10px;
-    align-items:center;
-    flex-wrap: wrap; 
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+    transition: transform 0.2s ease-out;
+}
+
+/* Watermark Real-time di Layar */
+#timestamp {
+    position: absolute;
+    top: 50px;
+    left: 20px;
+    color: #fff;
+    font-size: 12px;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+    z-index: 2;
+    pointer-events: none;
+    line-height: 1.4;
+}
+
+/* Container Zoom Slider Modern */
+.zoom-container {
+    position: absolute;
+    bottom: 160px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    max-width: 300px;
+    background: rgba(40, 40, 40, 0.6);
+    backdrop-filter: blur(10px);
+    padding: 15px 20px;
+    border-radius: 40px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    z-index: 3;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.zoom-icon {
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    min-width: 25px;
+}
+
+input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    background: rgba(255, 255, 255, 0.2);
+    height: 4px;
+    border-radius: 2px;
+    outline: none;
+}
+
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 24px;
+    height: 24px;
+    background: #fff;
+    border: 2px solid var(--primary-color);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+/* Bottom Bar */
+.bottom-bar {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 140px;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 3;
+}
+
+.shutter-btn {
+    width: 80px;
+    height: 80px;
+    background: #fff;
+    border-radius: 50%;
+    border: 6px solid rgba(255,255,255,0.2);
+    cursor: pointer;
+}
+
+.shutter-btn:active {
+    transform: scale(0.92);
+}
+
+.side-btn {
+    width: 50px;
+    height: 50px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border: none;
+}
+
+.gallery-preview {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    background: #222;
+    background-size: cover;
+    background-position: center;
+    border: 2px solid rgba(255,255,255,0.3);
+}
+
+/* Focus Ring */
+#focusRing {
+    position: absolute;
+    width: 70px;
+    height: 70px;
+    border: 2px solid yellow;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    display: none;
     z-index: 10;
 }
 
-button{
-    padding:10px 15px;
-    border:none;
-    border-radius:8px;
-    background:#00ff00;
-    color: #000;
-    cursor:pointer;
-    font-weight:bold;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+/* Modal Preview */
+#previewContainer {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #000;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
 }
 
-button:active {
-    transform: scale(0.95);
+#previewImage {
+    max-width: 100%;
+    max-height: 75vh;
+    object-fit: contain;
 }
 
-input[type=range]{
-    width:120px; 
+.preview-actions {
+    margin-top: 30px;
+    display: flex;
+    gap: 20px;
 }
 
-#previewContainer{
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:rgba(0,0,0,0.95);
-    display:none;
-    justify-content:center;
-    align-items:center;
-    flex-direction:column;
-    z-index: 20;
-}
-
-#previewContainer img{
-    max-width:95%;
-    max-height:75%;
-    border: 2px solid #00ff00;
-    border-radius:10px;
-}
-
-.preview-buttons{
-    margin-top:20px;
-    display:flex;
-    gap:20px;
+.action-btn {
+    padding: 15px 30px;
+    border-radius: 30px;
+    border: none;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
 }
 </style>
 </head>
 
-<body>
+<body onclick="handleFocus(event)">
 
-<video id="video" autoplay playsinline></video>
+<div class="camera-wrapper">
+    <video id="video" autoplay playsinline></video>
+    <div id="focusRing"></div>
 
-<div class="controls">
-    <span style="color:white; font-size:12px;">ZOOM</span>
-    <input type="range" id="zoomSlider" min="1" max="4" step="0.1" value="1">
-    <button onclick="ambilFoto()">📸 AMBIL FOTO HD</button>
-    <button onclick="balikKamera()">🔄 BALIK</button>
+    <div id="timestamp">
+        <span style="color:yellow; font-weight:bold; font-size: 14px;">Pekerjaan LM 1 dan LM 2 PBN</span><br>
+        <span id="liveData">Mencari GPS...</span>
+    </div>
+
+    <div class="zoom-container">
+        <span class="zoom-icon">1x</span>
+        <input type="range" id="zoomSlider" min="1" max="5" step="0.1" value="1">
+        <span class="zoom-icon" id="zoomVal">5x</span>
+    </div>
+
+    <div class="bottom-bar">
+        <div class="gallery-preview" id="galleryThumb" onclick="tutupPreview(false)"></div>
+        <button class="shutter-btn" onclick="ambilFoto()"></button>
+        <button class="side-btn" onclick="balikKamera()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M7 7h10v3l4-4-4-4v3H5c-1.1 0-2 .9-2 2v7h2V7zm10 10H7v-3l-4 4 4 4v-3h12c1.1 0 2-.9 2-2V9h-2v7z"/></svg>
+        </button>
+    </div>
 </div>
-
-<div id="timestamp" style="white-space: pre-wrap;">
-<b style="color:yellow;">Pekerjaan LM 1 dan LM 2 PBN</b>
-Memuat lokasi HD...</div>
 
 <div id="previewContainer">
     <img id="previewImage">
-    <div class="preview-buttons">
-        <button onclick="downloadFoto()" style="background:#2ecc71; color:white;">⬇ SIMPAN HD (JPG)</button>
-        <button onclick="tutupPreview()" style="background:#e74c3c; color:white;">❌ BATAL</button>
+    <div class="preview-actions">
+        <button class="action-btn" style="background:#00ff00; color:#000;" onclick="downloadFoto()">SIMPAN HD</button>
+        <button class="action-btn" style="background:#333; color:#fff;" onclick="tutupPreview(true)">BATAL</button>
     </div>
 </div>
 
 <script>
-let latitude = "";
-let longitude = "";
-let alamatLengkap = "Mencari lokasi...";
+let latitude = "-";
+let longitude = "-";
+let alamat = "Mencari lokasi...";
 let fotoDataURL = "";
 let currentStream = null;
-let currentFacingMode = "environment"; 
+let currentFacingMode = "environment";
 
 const video = document.getElementById("video");
-const timestamp = document.getElementById("timestamp");
+const liveData = document.getElementById("liveData");
+const focusRing = document.getElementById("focusRing");
 const zoomSlider = document.getElementById("zoomSlider");
 
-// FUNGSI KAMERA DENGAN RESOLUSI HD
 function mulaiKamera() {
-    if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
-    }
-
-    // Meminta resolusi ideal 1920x1080 (Full HD)
-    const constraints = {
+    if (currentStream) currentStream.getTracks().forEach(t => t.stop());
+    navigator.mediaDevices.getUserMedia({
         video: { 
             facingMode: currentFacingMode,
             width: { ideal: 1920 },
             height: { ideal: 1080 }
         }
-    };
-
-    navigator.mediaDevices.getUserMedia(constraints)
-    .then(stream => {
+    }).then(stream => {
         currentStream = stream;
         video.srcObject = stream;
-    })
-    .catch(err => {
-        alert("Gagal mengakses kamera HD. Pastikan izin diberikan.");
     });
 }
+
+// Event Listener Slider Zoom
+zoomSlider.addEventListener("input", function() {
+    video.style.transform = `scale(${this.value})`;
+});
 
 function balikKamera() {
     currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
     zoomSlider.value = 1;
-    video.style.transform = `scale(1)`;
+    video.style.transform = "scale(1)";
     mulaiKamera();
 }
 
-mulaiKamera();
+function handleFocus(e) {
+    if(e.target.type === 'range') return;
+    focusRing.style.left = e.pageX + 'px';
+    focusRing.style.top = e.pageY + 'px';
+    focusRing.style.display = 'block';
+    setTimeout(() => focusRing.style.display = 'none', 800);
+}
 
-zoomSlider.addEventListener("input", function(){
-    video.style.transform = `scale(${this.value})`;
-});
-
-// GPS
 if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-        function(position){
-            latitude = position.coords.latitude;
-            longitude = position.coords.longitude;
-            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
-            .then(res => res.json())
-            .then(data => {
-                alamatLengkap = data.display_name || "Alamat tidak ditemukan";
-            })
-            .catch(() => alamatLengkap = "Gagal memuat alamat");
-        }, 
-        function(error) { alamatLengkap = "GPS tidak aktif"; },
-        { enableHighAccuracy: true }
-    );
+    navigator.geolocation.watchPosition(p => {
+        latitude = p.coords.latitude;
+        longitude = p.coords.longitude;
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
+            .then(r => r.json()).then(d => alamat = d.display_name || "Alamat tidak ditemukan");
+    }, null, { enableHighAccuracy: true });
 }
 
 setInterval(() => {
     const now = new Date();
-    const tgl = now.toLocaleDateString('id-ID');
-    const wkt = now.toLocaleTimeString('id-ID');
-    timestamp.innerHTML = `<b style="color:yellow;">Pekerjaan LM 1 dan LM 2 PBN</b>\n📅 ${tgl}\n⏰ ${wkt}\n📍 ${alamatLengkap}\n🌍 ${latitude}, ${longitude}`;
+    liveData.innerHTML = `📅 ${now.toLocaleDateString('id-ID')} | ⏰ ${now.toLocaleTimeString('id-ID')}<br>📍 ${alamat}<br>🌍 ${latitude}, ${longitude}`;
 }, 1000);
 
-// FUNGSI AMBIL FOTO HD DENGAN OPTIMASI CANVAS
-function ambilFoto(){
-    if(!video.videoWidth) return alert("Kamera belum siap.");
-
+function ambilFoto() {
     const canvas = document.createElement("canvas");
-    // Gunakan resolusi asli kamera (HD) bukan resolusi layar
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext("2d");
-
-    // Gambar dengan kualitas tinggi
-    ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
-    const scale = parseFloat(zoomSlider.value);
-    const w = canvas.width / scale;
-    const h = canvas.height / scale;
+    const zoom = parseFloat(zoomSlider.value);
+    const w = canvas.width / zoom;
+    const h = canvas.height / zoom;
     const x = (canvas.width - w) / 2;
     const y = (canvas.height - h) / 2;
-
     ctx.drawImage(video, x, y, w, h, 0, 0, canvas.width, canvas.height);
 
-    // Pengaturan Teks Skala Besar (Sesuai HD)
-    const fontSize = Math.max(30, Math.floor(canvas.height * 0.025)); 
-    const padding = 35;
-    const lineHeight = fontSize * 1.5;
-    const maxWidth = canvas.width * 0.85; 
-    const xPos = 50;
+    const fs = Math.max(30, Math.floor(canvas.height * 0.025));
+    ctx.font = `bold ${fs}px Arial`;
     
-    const lines = [];
-    lines.push("Pekerjaan LM 1 dan LM 2 PBN"); 
+    const maxWidth = canvas.width * 0.85;
+    const lines = ["Pekerjaan LM 1 dan LM 2 PBN"];
+    const rawLines = `📅 ${new Date().toLocaleDateString('id-ID')} | ⏰ ${new Date().toLocaleTimeString('id-ID')}\n📍 ${alamat}\n🌍 ${latitude}, ${longitude}`.split('\n');
     
-    const rawData = timestamp.innerText.replace("Pekerjaan LM 1 dan LM 2 PBN", "").trim();
-    const rawLines = rawData.split('\n');
-
-    ctx.font = `bold ${fontSize}px Arial`;
-    rawLines.forEach(line => {
-        let words = line.trim().split(' ');
-        let currentLine = '';
-        for (let n = 0; n < words.length; n++) {
-            let testLine = currentLine + words[n] + ' ';
-            if (ctx.measureText(testLine).width > maxWidth && n > 0) {
-                lines.push(currentLine);
-                currentLine = words[n] + ' ';
-            } else {
-                currentLine = testLine;
-            }
-        }
-        lines.push(currentLine);
+    rawLines.forEach(l => {
+        let words = l.split(' '), cur = '';
+        words.forEach(w => {
+            if (ctx.measureText(cur + w).width > maxWidth) { lines.push(cur.trim()); cur = w + ' '; }
+            else cur += w + ' ';
+        });
+        lines.push(cur.trim());
     });
 
-    // Background Kotak
-    const bgHeight = (lines.length * lineHeight) + (padding * 2);
-    const bgY = canvas.height - bgHeight - 60;
+    const bgH = (lines.length * (fs * 1.5)) + 60;
+    const bgY = canvas.height - bgH - 60;
 
-    ctx.fillStyle = "rgba(0,0,0,0.7)";
-    if (ctx.roundRect) {
-        ctx.beginPath();
-        ctx.roundRect(xPos - 20, bgY, maxWidth + 40, bgHeight, 20);
-        ctx.fill();
-    } else {
-        ctx.fillRect(xPos - 20, bgY, maxWidth + 40, bgHeight);
-    }
+    ctx.fillStyle = "rgba(0,0,0,0.6)";
+    ctx.fillRect(40, bgY, maxWidth + 40, bgH);
 
-    // Gambar Teks
     ctx.textBaseline = "top";
-    lines.forEach((line, index) => {
-        if(index === 0) {
-            ctx.fillStyle = "yellow";
-            ctx.font = `bold ${fontSize + 10}px Arial`;
-        } else {
-            ctx.fillStyle = "#00ff00";
-            ctx.font = `bold ${fontSize}px Arial`;
-        }
-        ctx.fillText(line.trim(), xPos, bgY + padding + (index * lineHeight));
+    lines.forEach((l, i) => {
+        ctx.fillStyle = i === 0 ? "yellow" : "#00ff00";
+        ctx.font = i === 0 ? `bold ${fs+8}px Arial` : `bold ${fs}px Arial`;
+        ctx.fillText(l, 60, bgY + 30 + (i * fs * 1.5));
     });
 
-    // Output Kualitas Maksimal (1.0 = Tanpa Kompresi)
     fotoDataURL = canvas.toDataURL("image/jpeg", 1.0);
     document.getElementById("previewImage").src = fotoDataURL;
+    document.getElementById("galleryThumb").style.backgroundImage = `url(${fotoDataURL})`;
     document.getElementById("previewContainer").style.display = "flex";
 }
 
-function downloadFoto(){
-    if(!fotoDataURL) return;
-    const link = document.createElement("a");
-    link.download = `PBN_HD_${new Date().getTime()}.jpg`;
-    link.href = fotoDataURL;
-    link.click();
+function downloadFoto() {
+    const a = document.createElement("a");
+    a.href = fotoDataURL;
+    a.download = `PBN_HD_${Date.now()}.jpg`;
+    a.click();
 }
 
-function tutupPreview(){
-    document.getElementById("previewContainer").style.display = "none";
+function tutupPreview(isBatal) {
+    document.getElementById("previewContainer").style.display = isBatal ? "none" : (fotoDataURL ? "flex" : "none");
 }
+
+mulaiKamera();
 </script>
 </body>
 </html>
