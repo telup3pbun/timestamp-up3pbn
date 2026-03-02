@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Camera Timestamp Pro</title>
+
+<style>
+body{
+    margin:0;
+    background:black;
+    font-family:Arial, sans-serif;
+    overflow:hidden;
+}
+
+video{
+    width:100vw;
+    height:100vh;
+    object-fit:cover;
+    transform-origin:center;
+}
+
+#timestamp{
+    position:absolute;
+    bottom:20px;
+    left:20px;
+    background:rgba(0,0,0,0.6);
+    color:#00ff00;
+    padding:15px;
+    border-radius:10px;
+    font-size:14px;
+    max-width:90%;
+    line-height: 1.5;
+    z-index: 5;
+}
+
+.controls{
+    position:absolute;
+    top:20px;
+    left:20px;
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap: wrap; /* Agar tombol tidak keluar layar di HP kecil */
+    z-index: 10;
+}
+
+button{
+    padding:8px 12px;
+    border:none;
+    border-radius:8px;
+    background:#00ff00;
+    color: #000;
+    cursor:pointer;
+    font-weight:bold;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+button:active {
+    transform: scale(0.95);
+}
+
+input[type=range]{
+    width:100px; /* Sedikit diperkecil agar muat dengan tombol baru */
+}
+
+#previewContainer{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.9);
+    display:none;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    z-index: 20;
+}
+
+#previewContainer img{
+    max-width:90%;
+    max-height:70%;
+    border-radius:10px;
+}
+
+.preview-buttons{
+    margin-top:20px;
+    display:flex;
+    gap:20px;
+}
+</style>
+</head>
+
+<body>
+
+<video id="video" autoplay playsinline></video>
+
+<div class="controls">
+    🔍 <input type="range" id="zoomSlider" min="1" max="3" step="0.1" value="1">
+    <button onclick="ambilFoto()">📸 Foto</button>
+    <button onclick="balikKamera()">🔄 Kamera</button>
+</div>
+
+<div id="timestamp" style="white-space: pre-wrap;">Memuat lokasi...</div>
+
+<div id="previewContainer">
+    <img id="previewImage">
+    <div class="preview-buttons">
+        <button onclick="downloadFoto()">⬇ Download JPG</button>
+        <button onclick="tutupPreview()">❌ Batal</button>
+    </div>
+</div>
+
+<script>
+let latitude = "";
+let longitude = "";
+let alamatLengkap = "Mencari lokasi...";
+let fotoDataURL = "";
+
+let currentStream = null;
+let currentFacingMode = "environment"; // Default kamera belakang
+
+const video = document.getElementById("video");
+const timestamp = document.getElementById("timestamp");
+const zoomSlider = document.getElementById("zoomSlider");
+
+// FUNGSI MEMULAI KAMERA
+function mulaiKamera() {
+    // Hentikan kamera sebelumnya jika ada (penting saat ganti kamera)
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+    }
+
+    navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: currentFacingMode } 
+    })
+    .then(stream => {
+        currentStream = stream;
+        video.srcObject = stream;
+    })
+    .catch(err => {
+        alert("Kamera tidak bisa diakses. Pastikan Anda memberikan izin.");
+        console.error(err);
+    });
+}
+
+// FUNGSI MEMBALIK KAMERA
+function balikKamera() {
+    // Ubah mode: jika belakang jadi depan, jika depan jadi belakang
+    currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+    
+    // Reset zoom saat ganti kamera
+    zoomSlider.value = 1;
+    video.style.transform = `scale(1)`;
+    
+    mulaiKamera();
+}
+
+// AKTIFKAN KAMERA PERTAMA KALI
+mulaiKamera();
+
+// ZOOM DIGITAL PADA TAMPILAN
+zoomSlider.addEventListener("input", function(){
+    video.style.transform = `scale(${this.value})`;
+});
+
+// AMBIL LOKASI GPS
+if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+        function(position){
+            latitude = position.coords.latitude;
+            longitude = position.coords.longitude;
+
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
+            .then(res => res.json())
+            .then(data => {
+                alamatLengkap = data.display_name || "Alamat tidak ditemukan";
+            })
+            .catch(() => alamatLengkap = "Gagal memuat alamat");
+        }, 
+        function(error) {
+            alamatLengkap = "Akses GPS ditolak/gagal";
+        },
+        { enableHighAccuracy: true }
+    );
+} else {
+    alamatLengkap = "Browser tidak mendukung GPS";
+}
+
+// UPDATE TAMPILAN WAKTU SECARA REAL-TIME
+setInterval(() => {
+    const now = new Date();
+    const tanggal = now.toLocaleDateString('id-ID');
+    const waktu = now.toLocaleTimeString('id-ID');
+
+    timestamp.innerText = `📅 ${tanggal}\n⏰ ${waktu}\n📍 ${alamatLengkap}\n🌍 ${latitude}, ${longitude}`;
+}, 1000);
+
+// FUNGSI MENGAMBIL FOTO & MENGGAMBAR KE CANVAS
+function ambilFoto(){
+    if(!video.videoWidth) return alert("Kamera belum siap.");
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+
+    // Kalkulasi Zoom untuk gambar yang disimpan
+    const scale = parseFloat(zoomSlider.value);
+    const w = canvas.width / scale;
+    const h = canvas.height / scale;
+    const x = (canvas.width - w) / 2;
+    const y = (canvas.height - h) / 2;
+
+    // Gambar frame video ke canvas
+    ctx.drawImage(video, x, y, w, h, 0, 0, canvas.width, canvas.height);
+
+    // Pengaturan Teks (Berdasarkan rasio resolusi kamera)
+    const fontSize = Math.max(20, Math.floor(canvas.height * 0.03)); 
+    const padding = 20;
+    const lineHeight = fontSize * 1.5;
+    
+    // Pecah teks berdasarkan baris baru (\n)
+    const teksArray = timestamp.innerText.split('\n').filter(t => t.trim() !== "");
+
+    // Gambar kotak transparan sebagai latar belakang teks
+    ctx.fillStyle = "rgba(0,0,0,0.6)";
+    const bgWidth = canvas.width * 0.8; 
+    const bgHeight = (teksArray.length * lineHeight) + padding;
+    const bgX = 20;
+    const bgY = canvas.height - bgHeight - 20;
+    
+    if (ctx.roundRect) {
+        ctx.roundRect(bgX, bgY, bgWidth, bgHeight, 15);
+    } else {
+        ctx.fillRect(bgX, bgY, bgWidth, bgHeight);
+    }
+    ctx.fill();
+
+    // Gambar teks ke dalam canvas
+    ctx.fillStyle = "#00ff00";
+    ctx.font = `${fontSize}px Arial`;
+    ctx.textBaseline = "top";
+    
+    teksArray.forEach((baris, index) => {
+        ctx.fillText(baris, bgX + 15, bgY + 15 + (index * lineHeight), bgWidth - 30);
+    });
+
+    // Tampilkan hasil di layar
+    fotoDataURL = canvas.toDataURL("image/jpeg", 0.9);
+    document.getElementById("previewImage").src = fotoDataURL;
+    document.getElementById("previewContainer").style.display = "flex";
+}
+
+// FUNGSI DOWNLOAD
+function downloadFoto(){
+    if(!fotoDataURL) return;
+    const link = document.createElement("a");
+    const namaFile = `Foto_Timestamp_${new Date().getTime()}.jpg`;
+    link.download = namaFile;
+    link.href = fotoDataURL;
+    link.click();
+}
+
+// FUNGSI TUTUP PREVIEW
+function tutupPreview(){
+    document.getElementById("previewContainer").style.display = "none";
+}
+</script>
+</body>
+</html>
