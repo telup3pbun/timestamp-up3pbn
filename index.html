@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Camera Timestamp Pro - UI High Elevation</title>
+<title>Camera Pekerjaan LM 1 dan LM 2</title>
 
 <style>
 :root {
@@ -31,7 +31,7 @@ video {
     height: 100%;
     object-fit: cover;
     z-index: 1;
-    transition: transform 0.2s ease-out;
+    /* Transisi dihapus agar zoom terasa instan dan responsif */
 }
 
 /* Watermark Real-time */
@@ -45,9 +45,12 @@ video {
     z-index: 2;
     pointer-events: none;
     line-height: 1.4;
+    background: rgba(0,0,0,0.3);
+    padding: 5px;
+    border-radius: 5px;
 }
 
-/* Zoom Slider - Dinaikkan lebih tinggi (240px dari bawah) */
+/* Zoom Slider */
 .zoom-container {
     position: absolute;
     bottom: 240px; 
@@ -91,7 +94,7 @@ input[type=range]::-webkit-slider-thumb {
     cursor: pointer;
 }
 
-/* BOTTOM BAR - Dinaikkan signifikan (90px dari bawah) */
+/* BOTTOM BAR */
 .bottom-bar {
     position: absolute;
     bottom: 90px; 
@@ -190,15 +193,15 @@ input[type=range]::-webkit-slider-thumb {
 </style>
 </head>
 
-<body onclick="handleFocus(event)">
+<body>
 
-<div class="camera-wrapper">
+<div class="camera-wrapper" onclick="handleFocus(event)">
     <video id="video" autoplay playsinline></video>
     <div id="focusRing"></div>
 
     <div id="timestamp">
         <span style="color:yellow; font-weight:bold; font-size: 14px;">Pekerjaan LM 1 dan LM 2 PBN</span><br>
-        <span id="liveData">Memuat GPS...</span>
+        <span id="liveData">Mencari Lokasi & GPS...</span>
     </div>
 
     <div class="zoom-container">
@@ -237,96 +240,142 @@ const liveData = document.getElementById("liveData");
 const focusRing = document.getElementById("focusRing");
 const zoomSlider = document.getElementById("zoomSlider");
 
-function mulaiKamera() {
-    if (currentStream) currentStream.getTracks().forEach(t => t.stop());
-    navigator.mediaDevices.getUserMedia({
-        video: { 
+async function mulaiKamera() {
+    // Stop stream sebelumnya jika ada
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+    }
+
+    const constraints = {
+        video: {
             facingMode: currentFacingMode,
             width: { ideal: 1920 },
             height: { ideal: 1080 }
         }
-    }).then(stream => {
-        currentStream = stream;
-        video.srcObject = stream;
-    });
+    };
+
+    try {
+        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = currentStream;
+        
+        // Reset zoom visual saat ganti kamera
+        video.style.transform = `scale(${zoomSlider.value})`;
+    } catch (err) {
+        console.error("Error akses kamera: ", err);
+        alert("Gagal mengakses kamera. Pastikan izin diberikan.");
+    }
 }
 
+// Event listener zoom
 zoomSlider.addEventListener("input", function() {
     video.style.transform = `scale(${this.value})`;
 });
 
 function balikKamera() {
+    // Toggle kamera
     currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+    // Reset slider ke 1x agar tidak pusing saat pindah kamera
     zoomSlider.value = 1;
-    video.style.transform = "scale(1)";
     mulaiKamera();
 }
 
 function handleFocus(e) {
-    if(e.target.type === 'range') return;
-    focusRing.style.left = e.pageX + 'px';
-    focusRing.style.top = e.pageY + 'px';
+    // Jangan munculkan focus ring jika klik slider atau tombol
+    if(e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('.bottom-bar')) return;
+    
+    focusRing.style.left = e.clientX + 'px';
+    focusRing.style.top = e.clientY + 'px';
     focusRing.style.display = 'block';
     setTimeout(() => focusRing.style.display = 'none', 800);
 }
 
+// GPS Tracking
 if (navigator.geolocation) {
     navigator.geolocation.watchPosition(p => {
-        latitude = p.coords.latitude;
-        longitude = p.coords.longitude;
+        latitude = p.coords.latitude.toFixed(7);
+        longitude = p.coords.longitude.toFixed(7);
         fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
-            .then(r => r.json()).then(d => alamat = d.display_name || "Alamat tidak ditemukan");
-    }, null, { enableHighAccuracy: true });
+            .then(r => r.json())
+            .then(d => {
+                alamat = d.display_name || "Alamat tidak ditemukan";
+            }).catch(() => {
+                alamat = "Gagal memuat alamat (Masalah koneksi)";
+            });
+    }, err => {
+        alamat = "Izin GPS ditolak/tidak aktif";
+    }, { enableHighAccuracy: true });
 }
 
+// Update clock & overlay UI
 setInterval(() => {
     const now = new Date();
-    liveData.innerHTML = `📅 ${now.toLocaleDateString('id-ID')} | ⏰ ${now.toLocaleTimeString('id-ID')}<br>📍 ${alamat}<br>🌍 ${latitude}, ${longitude}`;
+    const tgl = now.toLocaleDateString('id-ID', { day:'2-digit', month:'2-digit', year:'numeric' });
+    const jam = now.toLocaleTimeString('id-ID');
+    liveData.innerHTML = `📅 ${tgl} | ⏰ ${jam}<br>📍 ${alamat}<br>🌍 ${latitude}, ${longitude}`;
 }, 1000);
 
 function ambilFoto() {
     const canvas = document.createElement("canvas");
+    // Gunakan resolusi asli video, bukan ukuran tampilan CSS
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext("2d");
-    ctx.imageSmoothingQuality = 'high';
 
+    // Perhitungan zoom manual pada canvas
     const zoom = parseFloat(zoomSlider.value);
-    const w = canvas.width / zoom;
-    const h = canvas.height / zoom;
-    const x = (canvas.width - w) / 2;
-    const y = (canvas.height - h) / 2;
-    ctx.drawImage(video, x, y, w, h, 0, 0, canvas.width, canvas.height);
+    const sw = canvas.width / zoom;
+    const sh = canvas.height / zoom;
+    const sx = (canvas.width - sw) / 2;
+    const sy = (canvas.height - sh) / 2;
 
-    const fs = Math.max(30, Math.floor(canvas.height * 0.025));
+    // Gambar frame video ke canvas dengan zoom yang sesuai
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+
+    // Styling Watermark
+    const fs = Math.max(24, Math.floor(canvas.height * 0.025));
     ctx.font = `bold ${fs}px Arial`;
-    const maxWidth = canvas.width * 0.85;
-    const lines = ["Pekerjaan LM 1 dan LM 2 PBN"];
-    const rawLines = `📅 ${new Date().toLocaleDateString('id-ID')} | ⏰ ${new Date().toLocaleTimeString('id-ID')}\n📍 ${alamat}\n🌍 ${latitude}, ${longitude}`.split('\n');
+    const maxWidth = canvas.width * 0.8;
     
-    rawLines.forEach(l => {
-        let words = l.split(' '), cur = '';
+    // Siapkan data teks
+    const lines = ["Pekerjaan LM 1 dan LM 2 PBN"];
+    const now = new Date();
+    const tglJam = `📅 ${now.toLocaleDateString('id-ID')} | ⏰ ${now.toLocaleTimeString('id-ID')}`;
+    const locArr = [`📍 ${alamat}`, `🌍 ${latitude}, ${longitude}`];
+    
+    // Fungsi bungkus teks (word wrap)
+    function wrapText(text, list) {
+        let words = text.split(' '), cur = '';
         words.forEach(w => {
-            if (ctx.measureText(cur + w).width > maxWidth) { lines.push(cur.trim()); cur = w + ' '; }
-            else cur += w + ' ';
+            if (ctx.measureText(cur + w).width > maxWidth) {
+                list.push(cur.trim());
+                cur = w + ' ';
+            } else cur += w + ' ';
         });
-        lines.push(cur.trim());
-    });
+        list.push(cur.trim());
+    }
 
-    const bgH = (lines.length * (fs * 1.5)) + 60;
+    wrapText(tglJam, lines);
+    locArr.forEach(l => wrapText(l, lines));
+
+    // Gambar background watermark hitam transparan
+    const lineHeight = fs * 1.5;
+    const bgH = (lines.length * lineHeight) + 40;
     const bgY = canvas.height - bgH - 60;
 
-    ctx.fillStyle = "rgba(0,0,0,0.6)";
-    ctx.fillRect(40, bgY, maxWidth + 40, bgH);
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillRect(40, bgY, maxWidth + 60, bgH);
 
+    // Render Teks
     ctx.textBaseline = "top";
     lines.forEach((l, i) => {
-        ctx.fillStyle = i === 0 ? "yellow" : "#00ff00";
-        ctx.font = i === 0 ? `bold ${fs+8}px Arial` : `bold ${fs}px Arial`;
-        ctx.fillText(l, 60, bgY + 30 + (i * fs * 1.5));
+        ctx.fillStyle = (i === 0) ? "yellow" : "#00ff00";
+        if(i === 0) ctx.font = `bold ${fs + 10}px Arial`;
+        else ctx.font = `bold ${fs}px Arial`;
+        
+        ctx.fillText(l, 60, bgY + 20 + (i * lineHeight));
     });
 
-    fotoDataURL = canvas.toDataURL("image/jpeg", 1.0);
+    fotoDataURL = canvas.toDataURL("image/jpeg", 0.9);
     document.getElementById("previewImage").src = fotoDataURL;
     document.getElementById("galleryThumb").style.backgroundImage = `url(${fotoDataURL})`;
     document.getElementById("previewContainer").style.display = "flex";
@@ -336,13 +385,17 @@ function downloadFoto() {
     const a = document.createElement("a");
     a.href = fotoDataURL;
     a.download = `PBN_HD_${Date.now()}.jpg`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
 }
 
 function tutupPreview(isBatal) {
-    document.getElementById("previewContainer").style.display = isBatal ? "none" : (fotoDataURL ? "flex" : "none");
+    if(!isBatal && !fotoDataURL) return;
+    document.getElementById("previewContainer").style.display = "none";
 }
 
+// Jalankan kamera pertama kali
 mulaiKamera();
 </script>
 </body>
