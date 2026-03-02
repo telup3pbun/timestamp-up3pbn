@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Camera Timestamp Pro</title>
+<title>Camera Timestamp Pro HD - PBN</title>
 
 <style>
 body{
     margin:0;
     background:black;
-    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Font lebih modern */
+    font-family:Arial, sans-serif;
     overflow:hidden;
 }
 
@@ -24,16 +24,14 @@ video{
     position:absolute;
     bottom:20px;
     left:20px;
-    background:rgba(0,0,0,0.6); /* Transparan */
-    color:#00ff00; /* Hijau limau */
+    background:rgba(0,0,0,0.6);
+    color:#00ff00;
     padding:15px;
-    border-radius:12px;
+    border-radius:10px;
     font-size:14px;
     max-width:90%;
-    backdrop-filter: blur(5px); /* Efek buram latar belakang */
-    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-    pointer-events: none; /* Klik tidak menghalangi video */
-    line-height: 1.5; /* Spasi baris */
+    line-height: 1.5;
+    z-index: 5;
 }
 
 .controls{
@@ -43,34 +41,27 @@ video{
     display:flex;
     gap:10px;
     align-items:center;
+    flex-wrap: wrap; 
+    z-index: 10;
 }
 
 button{
     padding:10px 15px;
     border:none;
-    border-radius:10px;
+    border-radius:8px;
     background:#00ff00;
     color: #000;
     cursor:pointer;
     font-weight:bold;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-    transition: transform 0.1s;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
 }
 
 button:active {
     transform: scale(0.95);
 }
 
-.btn-icon {
-    font-size: 1.2rem;
-}
-
 input[type=range]{
-    width:150px;
-    accent-color: #00ff00;
+    width:120px; 
 }
 
 #previewContainer{
@@ -79,19 +70,19 @@ input[type=range]{
     left:0;
     width:100%;
     height:100%;
-    background:rgba(0,0,0,0.9);
+    background:rgba(0,0,0,0.95);
     display:none;
     justify-content:center;
     align-items:center;
     flex-direction:column;
-    z-index: 10;
+    z-index: 20;
 }
 
 #previewContainer img{
-    max-width:90%;
-    max-height:70%;
-    border-radius:12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+    max-width:95%;
+    max-height:75%;
+    border: 2px solid #00ff00;
+    border-radius:10px;
 }
 
 .preview-buttons{
@@ -107,172 +98,190 @@ input[type=range]{
 <video id="video" autoplay playsinline></video>
 
 <div class="controls">
-    🔍 <input type="range" id="zoomSlider" min="1" max="3" step="0.1" value="1">
-    <button onclick="ambilFoto()">
-        <span class="btn-icon">📸</span> <span class="btn-text">Ambil Foto</span>
-    </button>
+    <span style="color:white; font-size:12px;">ZOOM</span>
+    <input type="range" id="zoomSlider" min="1" max="4" step="0.1" value="1">
+    <button onclick="ambilFoto()">📸 AMBIL FOTO HD</button>
+    <button onclick="balikKamera()">🔄 BALIK</button>
 </div>
 
-<div id="timestamp">Memuat lokasi...</div>
+<div id="timestamp" style="white-space: pre-wrap;">
+<b style="color:yellow;">Pekerjaan LM 1 dan LM 2 PBN</b>
+Memuat lokasi HD...</div>
 
 <div id="previewContainer">
     <img id="previewImage">
     <div class="preview-buttons">
-        <button onclick="downloadFoto()" style="background-color: #007bff; color: white;">
-             <span class="btn-icon">⬇</span> Download JPG
-        </button>
-        <button onclick="tutupPreview()" style="background-color: #ffc107; color: black;">
-             <span class="btn-icon">❌</span> Batal
-        </button>
+        <button onclick="downloadFoto()" style="background:#2ecc71; color:white;">⬇ SIMPAN HD (JPG)</button>
+        <button onclick="tutupPreview()" style="background:#e74c3c; color:white;">❌ BATAL</button>
     </div>
 </div>
 
 <script>
-// Variabel data timestamp
-let timestampDataLines = []; 
 let latitude = "";
 let longitude = "";
-let alamatLengkap = "Mencari alamat...";
+let alamatLengkap = "Mencari lokasi...";
 let fotoDataURL = "";
+let currentStream = null;
+let currentFacingMode = "environment"; 
 
 const video = document.getElementById("video");
 const timestamp = document.getElementById("timestamp");
 const zoomSlider = document.getElementById("zoomSlider");
 
-// AKTIFKAN KAMERA
-navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-.then(stream => {
-    video.srcObject = stream;
-})
-.catch(() => alert("Kamera tidak bisa diakses"));
+// FUNGSI KAMERA DENGAN RESOLUSI HD
+function mulaiKamera() {
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+    }
 
-// ZOOM DIGITAL PADA TAMPILAN VIDEO
+    // Meminta resolusi ideal 1920x1080 (Full HD)
+    const constraints = {
+        video: { 
+            facingMode: currentFacingMode,
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+        }
+    };
+
+    navigator.mediaDevices.getUserMedia(constraints)
+    .then(stream => {
+        currentStream = stream;
+        video.srcObject = stream;
+    })
+    .catch(err => {
+        alert("Gagal mengakses kamera HD. Pastikan izin diberikan.");
+    });
+}
+
+function balikKamera() {
+    currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+    zoomSlider.value = 1;
+    video.style.transform = `scale(1)`;
+    mulaiKamera();
+}
+
+mulaiKamera();
+
 zoomSlider.addEventListener("input", function(){
     video.style.transform = `scale(${this.value})`;
 });
 
-// GPS - AMBIL LOKASI
-navigator.geolocation.getCurrentPosition(function(position){
-    latitude = position.coords.latitude;
-    longitude = position.coords.longitude;
+// GPS
+if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+        function(position){
+            latitude = position.coords.latitude;
+            longitude = position.coords.longitude;
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
+            .then(res => res.json())
+            .then(data => {
+                alamatLengkap = data.display_name || "Alamat tidak ditemukan";
+            })
+            .catch(() => alamatLengkap = "Gagal memuat alamat");
+        }, 
+        function(error) { alamatLengkap = "GPS tidak aktif"; },
+        { enableHighAccuracy: true }
+    );
+}
 
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
-    .then(res => res.json())
-    .then(data => {
-        alamatLengkap = data.display_name || "Alamat tidak ditemukan";
-    })
-    .catch(() => alamatLengkap = "Gagal memuat alamat");
-}, function(error) {
-    alamatLengkap = "Akses GPS ditolak/gagal";
-});
-
-// UPDATE TAMPILAN WAKTU SECARA REAL-TIME
 setInterval(() => {
     const now = new Date();
-    const tanggal = now.toLocaleDateString('id-ID');
-    const waktu = now.toLocaleTimeString('id-ID');
-
-    // Susun data dalam array untuk mempermudah penggambaran di canvas nanti
-    timestampDataLines = [
-        `📅 ${tanggal}`,
-        `⏰ ${waktu}`,
-        `📍 ${alamatLengkap}`,
-        `🌍 ${latitude}, ${longitude}`
-    ];
-
-    // Tampilkan di HTML live preview dengan <br>
-    timestamp.innerHTML = timestampDataLines.join('<br>');
+    const tgl = now.toLocaleDateString('id-ID');
+    const wkt = now.toLocaleTimeString('id-ID');
+    timestamp.innerHTML = `<b style="color:yellow;">Pekerjaan LM 1 dan LM 2 PBN</b>\n📅 ${tgl}\n⏰ ${wkt}\n📍 ${alamatLengkap}\n🌍 ${latitude}, ${longitude}`;
 }, 1000);
 
-// AMBIL FOTO & GAMBAR KE CANVAS
+// FUNGSI AMBIL FOTO HD DENGAN OPTIMASI CANVAS
 function ambilFoto(){
     if(!video.videoWidth) return alert("Kamera belum siap.");
 
     const canvas = document.createElement("canvas");
+    // Gunakan resolusi asli kamera (HD) bukan resolusi layar
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext("2d");
 
-    // Hitung zoom agar sesuai hasil video
+    // Gambar dengan kualitas tinggi
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
     const scale = parseFloat(zoomSlider.value);
     const w = canvas.width / scale;
     const h = canvas.height / scale;
     const x = (canvas.width - w) / 2;
     const y = (canvas.height - h) / 2;
 
-    // Gambar frame video ke canvas
     ctx.drawImage(video, x, y, w, h, 0, 0, canvas.width, canvas.height);
 
-    // Pengaturan Teks & Latar Belakang Teks di Canvas (Agar terbaca)
-    const fontSize = Math.floor(canvas.height * 0.03); // Ukuran font proporsional ~3% dari tinggi foto
-    const padding = fontSize * 0.8;
+    // Pengaturan Teks Skala Besar (Sesuai HD)
+    const fontSize = Math.max(30, Math.floor(canvas.height * 0.025)); 
+    const padding = 35;
     const lineHeight = fontSize * 1.5;
-    const startX = 20;
+    const maxWidth = canvas.width * 0.85; 
+    const xPos = 50;
     
-    // Pecah teks alamat agar tidak terlalu panjang jika ada alamat yang sangat detail
-    // (Fungsi ini bersifat opsional tapi bagus untuk keamanan visual)
-    const processedLines = [];
-    timestampDataLines.forEach(line => {
-        // Jika baris alamat sangat panjang, coba pecah
-        if(line.length > 50 && line.startsWith('📍')) {
-             const limit = 45;
-             const splitIndex = line.lastIndexOf(', ', limit);
-             if (splitIndex > 30) {
-                 processedLines.push(line.substring(0, splitIndex + 1));
-                 processedLines.push('📍 ' + line.substring(splitIndex + 2));
-             } else {
-                 processedLines.push(line); // Fallback: tidak bisa dipisah secara rapi
-             }
-        } else {
-            processedLines.push(line);
+    const lines = [];
+    lines.push("Pekerjaan LM 1 dan LM 2 PBN"); 
+    
+    const rawData = timestamp.innerText.replace("Pekerjaan LM 1 dan LM 2 PBN", "").trim();
+    const rawLines = rawData.split('\n');
+
+    ctx.font = `bold ${fontSize}px Arial`;
+    rawLines.forEach(line => {
+        let words = line.trim().split(' ');
+        let currentLine = '';
+        for (let n = 0; n < words.length; n++) {
+            let testLine = currentLine + words[n] + ' ';
+            if (ctx.measureText(testLine).width > maxWidth && n > 0) {
+                lines.push(currentLine);
+                currentLine = words[n] + ' ';
+            } else {
+                currentLine = testLine;
+            }
         }
+        lines.push(currentLine);
     });
-    
-    // Hitung total tinggi background berdasarkan jumlah baris
-    const totalTextHeight = processedLines.length * lineHeight;
-    const backgroundHeight = totalTextHeight + (padding * 2);
-    const startY = canvas.height - backgroundHeight - 20;
 
-    // Gambar kotak latar belakang transparan
-    ctx.fillStyle = "rgba(0,0,0,0.6)"; // Gelap transparan
-    // Hitung lebar maksimal teks untuk menyesuaikan lebar background
-    ctx.font = `${fontSize}px Arial`;
-    let maxTextWidth = 0;
-    processedLines.forEach(line => {
-        const textMetrics = ctx.measureText(line);
-        if(textMetrics.width > maxTextWidth) maxTextWidth = textMetrics.width;
-    });
-    const backgroundWidth = maxTextWidth + (padding * 2);
-    
-    // ctx.roundRect ? ctx.roundRect(startX, startY, backgroundWidth, backgroundHeight, 15) : ctx.fillRect(startX, startY, backgroundWidth, backgroundHeight); // Pilihan untuk sudut melengkung jika didukung browser
-    ctx.fillRect(startX, startY, backgroundWidth, backgroundHeight); // Fallback simple
+    // Background Kotak
+    const bgHeight = (lines.length * lineHeight) + (padding * 2);
+    const bgY = canvas.height - bgHeight - 60;
 
-    // Gambar teks baris demi baris di atas background
-    ctx.fillStyle = "#00ff00"; // Warna teks hijau limau
+    ctx.fillStyle = "rgba(0,0,0,0.7)";
+    if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(xPos - 20, bgY, maxWidth + 40, bgHeight, 20);
+        ctx.fill();
+    } else {
+        ctx.fillRect(xPos - 20, bgY, maxWidth + 40, bgHeight);
+    }
+
+    // Gambar Teks
     ctx.textBaseline = "top";
-    processedLines.forEach((baris, index) => {
-        ctx.fillText(baris, startX + padding, startY + padding + (index * lineHeight));
+    lines.forEach((line, index) => {
+        if(index === 0) {
+            ctx.fillStyle = "yellow";
+            ctx.font = `bold ${fontSize + 10}px Arial`;
+        } else {
+            ctx.fillStyle = "#00ff00";
+            ctx.font = `bold ${fontSize}px Arial`;
+        }
+        ctx.fillText(line.trim(), xPos, bgY + padding + (index * lineHeight));
     });
 
-    // Ubah canvas menjadi data URL
-    fotoDataURL = canvas.toDataURL("image/jpeg", 0.9);
-
-    // Tampilkan di preview
+    // Output Kualitas Maksimal (1.0 = Tanpa Kompresi)
+    fotoDataURL = canvas.toDataURL("image/jpeg", 1.0);
     document.getElementById("previewImage").src = fotoDataURL;
     document.getElementById("previewContainer").style.display = "flex";
 }
 
-// DOWNLOAD
 function downloadFoto(){
     if(!fotoDataURL) return;
     const link = document.createElement("a");
-    const namaFile = `Foto_Timestamp_${new Date().getTime()}.jpg`; // Nama file unik
-    link.download = namaFile;
+    link.download = `PBN_HD_${new Date().getTime()}.jpg`;
     link.href = fotoDataURL;
     link.click();
 }
 
-// TUTUP PREVIEW
 function tutupPreview(){
     document.getElementById("previewContainer").style.display = "none";
 }
