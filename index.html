@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Camera Timestamp Pro - Modern UI with Bottom Border</title>
+<title>Camera Timestamp Pro - Adjusted UI</title>
 
 <style>
 :root {
@@ -34,7 +34,7 @@ video {
     transition: transform 0.2s ease-out;
 }
 
-/* Watermark Real-time di Layar */
+/* Watermark Real-time */
 #timestamp {
     position: absolute;
     top: 50px;
@@ -47,28 +47,17 @@ video {
     line-height: 1.4;
 }
 
-/* Penyesuaian Style: Border Bawah */
-#timestamp::after {
-    content: "";
-    display: block;
-    width: 60px; /* Lebar border sedikit */
-    height: 2px; /* Tebal border */
-    background-color: rgba(255, 255, 255, 0.5); /* Warna border sedikit transparan */
-    margin-top: 5px; /* Jarak dari teks */
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); /* Sedikit bayangan */
-}
-
-/* Container Zoom Slider Modern */
+/* Zoom Slider */
 .zoom-container {
     position: absolute;
-    bottom: 160px;
+    bottom: 180px; /* Dinaikkan sedikit mengikuti shutter */
     left: 50%;
     transform: translateX(-50%);
     width: 80%;
     max-width: 300px;
     background: rgba(40, 40, 40, 0.6);
     backdrop-filter: blur(10px);
-    padding: 15px 20px;
+    padding: 12px 20px;
     border-radius: 40px;
     display: flex;
     align-items: center;
@@ -79,9 +68,8 @@ video {
 
 .zoom-icon {
     color: white;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: bold;
-    min-width: 25px;
 }
 
 input[type=range] {
@@ -95,44 +83,48 @@ input[type=range] {
 
 input[type=range]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     background: #fff;
     border: 2px solid var(--primary-color);
     border-radius: 50%;
     cursor: pointer;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
 }
 
-/* Bottom Bar */
+/* MODIFIKASI: Bottom Bar dinaikkan sedikit dari tepi bawah */
 .bottom-bar {
     position: absolute;
-    bottom: 0;
-    width: 100%;
-    height: 140px;
-    background: rgba(0, 0, 0, 0.9);
+    bottom: 30px; /* Memberikan jarak dari bawah layar */
+    width: 90%;
+    left: 5%;
+    height: 100px;
+    background: rgba(0, 0, 0, 0.5); /* Lebih transparan agar modern */
+    backdrop-filter: blur(15px);
+    border-radius: 50px; /* Membuat bentuk pill/oval */
     display: flex;
     justify-content: space-around;
     align-items: center;
     z-index: 3;
+    border: 1px solid rgba(255,255,255,0.1);
 }
 
 .shutter-btn {
-    width: 80px;
-    height: 80px;
+    width: 70px;
+    height: 70px;
     background: #fff;
     border-radius: 50%;
-    border: 6px solid rgba(255,255,255,0.2);
+    border: 4px solid rgba(255,255,255,0.3);
     cursor: pointer;
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
 }
 
 .shutter-btn:active {
-    transform: scale(0.92);
+    transform: scale(0.9);
 }
 
 .side-btn {
-    width: 50px;
-    height: 50px;
+    width: 45px;
+    height: 45px;
     background: rgba(255,255,255,0.1);
     border-radius: 50%;
     display: flex;
@@ -143,20 +135,20 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 .gallery-preview {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
+    width: 45px;
+    height: 45px;
+    border-radius: 10px;
     background: #222;
     background-size: cover;
     background-position: center;
-    border: 2px solid rgba(255,255,255,0.3);
+    border: 2px solid rgba(255,255,255,0.4);
 }
 
 /* Focus Ring */
 #focusRing {
     position: absolute;
-    width: 70px;
-    height: 70px;
+    width: 60px;
+    height: 60px;
     border: 2px solid yellow;
     border-radius: 50%;
     transform: translate(-50%, -50%);
@@ -165,7 +157,7 @@ input[type=range]::-webkit-slider-thumb {
     z-index: 10;
 }
 
-/* Modal Preview */
+/* Preview Modal */
 #previewContainer {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -180,21 +172,19 @@ input[type=range]::-webkit-slider-thumb {
 #previewImage {
     max-width: 100%;
     max-height: 75vh;
-    object-fit: contain;
 }
 
 .preview-actions {
-    margin-top: 30px;
+    margin-top: 20px;
     display: flex;
-    gap: 20px;
+    gap: 15px;
 }
 
 .action-btn {
-    padding: 15px 30px;
-    border-radius: 30px;
+    padding: 12px 25px;
+    border-radius: 25px;
     border: none;
     font-weight: bold;
-    font-size: 14px;
     cursor: pointer;
 }
 </style>
@@ -214,14 +204,14 @@ input[type=range]::-webkit-slider-thumb {
     <div class="zoom-container">
         <span class="zoom-icon">1x</span>
         <input type="range" id="zoomSlider" min="1" max="5" step="0.1" value="1">
-        <span class="zoom-icon" id="zoomVal">5x</span>
+        <span class="zoom-icon">5x</span>
     </div>
 
     <div class="bottom-bar">
         <div class="gallery-preview" id="galleryThumb" onclick="tutupPreview(false)"></div>
         <button class="shutter-btn" onclick="ambilFoto()"></button>
         <button class="side-btn" onclick="balikKamera()">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M7 7h10v3l4-4-4-4v3H5c-1.1 0-2 .9-2 2v7h2V7zm10 10H7v-3l-4 4 4 4v-3h12c1.1 0 2-.9 2-2V9h-2v7z"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M7 7h10v3l4-4-4-4v3H5c-1.1 0-2 .9-2 2v7h2V7zm10 10H7v-3l-4 4 4 4v-3h12c1.1 0 2-.9 2-2V9h-2v7z"/></svg>
         </button>
     </div>
 </div>
@@ -229,7 +219,7 @@ input[type=range]::-webkit-slider-thumb {
 <div id="previewContainer">
     <img id="previewImage">
     <div class="preview-actions">
-        <button class="action-btn" style="background:#00ff00; color:#000;" onclick="downloadFoto()">SIMPAN HD</button>
+        <button class="action-btn" style="background:var(--primary-color); color:#000;" onclick="downloadFoto()">SIMPAN HD</button>
         <button class="action-btn" style="background:#333; color:#fff;" onclick="tutupPreview(true)">BATAL</button>
     </div>
 </div>
@@ -261,7 +251,6 @@ function mulaiKamera() {
     });
 }
 
-// Event Listener Slider Zoom
 zoomSlider.addEventListener("input", function() {
     video.style.transform = `scale(${this.value})`;
 });
@@ -311,7 +300,6 @@ function ambilFoto() {
 
     const fs = Math.max(30, Math.floor(canvas.height * 0.025));
     ctx.font = `bold ${fs}px Arial`;
-    
     const maxWidth = canvas.width * 0.85;
     const lines = ["Pekerjaan LM 1 dan LM 2 PBN"];
     const rawLines = `📅 ${new Date().toLocaleDateString('id-ID')} | ⏰ ${new Date().toLocaleTimeString('id-ID')}\n📍 ${alamat}\n🌍 ${latitude}, ${longitude}`.split('\n');
@@ -328,13 +316,8 @@ function ambilFoto() {
     const bgH = (lines.length * (fs * 1.5)) + 60;
     const bgY = canvas.height - bgH - 60;
 
-    // Background Teks
     ctx.fillStyle = "rgba(0,0,0,0.6)";
     ctx.fillRect(40, bgY, maxWidth + 40, bgH);
-
-    // Penambahan Border Bawah Sedikit pada Canvas
-    ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-    ctx.fillRect(40, bgY + bgH, maxWidth + 40, 2); // Border tipis di bawah background teks
 
     ctx.textBaseline = "top";
     lines.forEach((l, i) => {
